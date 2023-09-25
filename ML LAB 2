@@ -1,0 +1,148 @@
+# ENCODING
+
+
+import numpy as np
+import pandas as pd
+from sklearn.impute import SimpleImputer
+
+s = pd.Series(list("abca"))
+print(s)
+
+data = [['Male','Female','Female','Female'],[82,54,42,28],['Graduate','Postgraduate','Highschool','Highschool']]
+data = pd.DataFrame(data)
+data = data.transpose()
+data
+
+data.columns=['gender','weight','degree']
+data.head()
+
+#number of distinct elements from perticular col
+data['degree'].nunique()
+
+#distinct column elements names will display on screen
+data['degree'].unique()
+
+pd.get_dummies(data)
+
+##label encoding
+
+#in this we attach each categorical value and integer value based on alphabetical order
+
+data = [['A','A','B','B','D','B','C','C'],[25,12,25,30,35,2,7,22]]
+df = pd.DataFrame(data)
+df = df.transpose()
+df
+
+df.columns=['team','points']
+df.head()
+
+df['team']=df['team'].astype('category')
+
+df['team']
+
+# we will print data frame after label encoding using category code
+df['team']=df['team'].cat.codes
+print(df)
+
+# label encoding using sklearn
+
+
+from sklearn.preprocessing import LabelEncoder
+
+#create instance of lab encoder
+
+lab=LabelEncoder()
+
+#perform label encoder om 'team' column
+
+df['team']=lab.fit_transform(df['team'])
+print(df)
+
+# frequency encoder
+
+from pandas.core.base import value_counts
+
+import pandas as pd
+
+value_counts=df['team'].value_counts().to_dict()
+print(value_counts)
+df['team']=df['team'].map(value_counts)
+
+# flashing encoder
+
+
+! pip install category_encoders
+
+
+import category_encoders as ce
+
+data=pd.DataFrame({'month':['jan','april','march','april','feb','june','july','sep']})
+data
+
+#create object encoder
+
+encoder=ce.HashingEncoder(cols='month',n_components=6)
+
+#encode the data
+data_encoded=pd.get_dummies(data=data,drop_first=True)
+data_encoded
+
+data=pd.DataFrame({'month':['jan','april','march','april','feb','jan','july','sep']})
+data
+
+#create object encoder
+
+encoder=ce.HashingEncoder(cols='month',n_components=6)
+
+#encode the data
+data_encoded=pd.get_dummies(data=data,drop_first=True)
+data_encoded
+
+# ordinary encoding
+
+import category_encoders as ce
+df=pd.DataFrame({'height':['tall','medium','short','tall','medium','short','tall','medium','short']})
+df
+
+#create object for ordinal encoding
+
+encoder=ce.OrdinalEncoder(cols=['height'],return_df=True,mapping=[{'col':'height','mapping':{'none':0,'tall':1,'medium':2,'short':3}}])
+encoder
+
+df['transformed']=encoder.fit_transform(df)
+print(df)
+
+# Binary encoding
+
+#create dataframe
+data = [['Male','Female','Female','Female'],['A','B','C','D','A'],['delhi','gurugram','delhi','delhi','gurugram']]
+data = pd.DataFrame(data)
+data = data.transpose()
+data.columns=['gender','class','city']
+data
+
+#transform the data
+import category_encoders as ce
+
+
+ce_be=ce.BinaryEncoder(cols=['class'])
+data_binary=ce_be.fit_transform(data["class"])
+data_binary
+
+data1=pd.DataFrame({'month':['jan','april','march','april','feb','june','july','sep','oct','nov','dec','jan']})
+data1
+
+encoder=ce.BinaryEncoder(cols=['month'],return_df=True)
+data=encoder.fit_transform(data1)
+data
+
+# effect encoding
+
+data=pd.DataFrame({'city':['delhi','mumbai','haidrabad','chennai','banglore','delhi','haidrabad','pune']})
+data
+
+encoder=ce.sum_coding.SumEncoder(cols='city',verbose=False)
+data=encoder.fit_transform(data)
+data
+
+#effect encoding generally takes category -1, 0, 1
