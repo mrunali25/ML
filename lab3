@@ -1,0 +1,253 @@
+# ENCODING #lab2
+
+
+import numpy as np
+import pandas as pd
+from sklearn.impute import SimpleImputer
+
+s = pd.Series(list("abca"))
+print(s)
+
+data = [['Male','Female','Female','Female'],[82,54,42,28],['Graduate','Postgraduate','Highschool','Highschool']]
+data = pd.DataFrame(data)
+data = data.transpose()
+data
+
+data.columns=['gender','weight','degree']
+data.head()
+
+#number of distinct elements from perticular col
+data['degree'].nunique()
+
+#distinct column elements names will display on screen
+data['degree'].unique()
+
+pd.get_dummies(data)
+
+##label encoding
+
+#in this we attach each categorical value and integer value based on alphabetical order
+
+data = [['A','A','B','B','D','B','C','C'],[25,12,25,30,35,2,7,22]]
+df = pd.DataFrame(data)
+df = df.transpose()
+df
+
+df.columns=['team','points']
+df.head()
+
+df['team']=df['team'].astype('category')
+
+df['team']
+
+# we will print data frame after label encoding using category code
+df['team']=df['team'].cat.codes
+print(df)
+
+# label encoding using sklearn
+
+
+from sklearn.preprocessing import LabelEncoder
+
+#create instance of lab encoder
+
+lab=LabelEncoder()
+
+#perform label encoder om 'team' column
+
+df['team']=lab.fit_transform(df['team'])
+print(df)
+
+# frequency encoder
+
+from pandas.core.base import value_counts
+
+import pandas as pd
+
+value_counts=df['team'].value_counts().to_dict()
+print(value_counts)
+df['team']=df['team'].map(value_counts)
+
+# flashing encoder
+
+
+! pip install category_encoders
+
+
+import category_encoders as ce
+
+data=pd.DataFrame({'month':['jan','april','march','april','feb','june','july','sep']})
+data
+
+#create object encoder
+
+encoder=ce.HashingEncoder(cols='month',n_components=6)
+
+#encode the data
+data_encoded=pd.get_dummies(data=data,drop_first=True)
+data_encoded
+
+data=pd.DataFrame({'month':['jan','april','march','april','feb','jan','july','sep']})
+data
+
+#create object encoder
+
+encoder=ce.HashingEncoder(cols='month',n_components=6)
+
+#encode the data
+data_encoded=pd.get_dummies(data=data,drop_first=True)
+data_encoded
+
+# ordinary encoding
+
+import category_encoders as ce
+df=pd.DataFrame({'height':['tall','medium','short','tall','medium','short','tall','medium','short']})
+df
+
+#create object for ordinal encoding
+
+encoder=ce.OrdinalEncoder(cols=['height'],return_df=True,mapping=[{'col':'height','mapping':{'none':0,'tall':1,'medium':2,'short':3}}])
+encoder
+
+df['transformed']=encoder.fit_transform(df)
+print(df)
+
+# Binary encoding
+
+#create dataframe
+data = [['Male','Female','Female','Female'],['A','B','C','D','A'],['delhi','gurugram','delhi','delhi','gurugram']]
+data = pd.DataFrame(data)
+data = data.transpose()
+data.columns=['gender','class','city']
+data
+
+#transform the data
+import category_encoders as ce
+
+
+ce_be=ce.BinaryEncoder(cols=['class'])
+data_binary=ce_be.fit_transform(data["class"])
+data_binary
+
+data1=pd.DataFrame({'month':['jan','april','march','april','feb','june','july','sep','oct','nov','dec','jan']})
+data1
+
+encoder=ce.BinaryEncoder(cols=['month'],return_df=True)
+data=encoder.fit_transform(data1)
+data
+
+# effect encoding
+
+data=pd.DataFrame({'city':['delhi','mumbai','haidrabad','chennai','banglore','delhi','haidrabad','pune']})
+data
+
+encoder=ce.sum_coding.SumEncoder(cols='city',verbose=False)
+data=encoder.fit_transform(data)
+data
+
+# effect encoding generally takes category -1, 0, 1
+
+# LAB 3
+(4-10-23)
+
+
+import numpy as np
+import pandas as pd
+
+data=pd.DataFrame({'a':[1,100,1000], 'b':[2,200,2000], 'c':[3,300,3000], 'd':[4,400,4000]})
+data
+
+data.iloc[0]       #prints 1st row with all columns #indexing starts from 0
+
+data.iloc[0,1]     #prints 1st row 2nd column element 
+
+data.iloc[[0,1]]   #prints 1st and 2nd row
+
+data.iloc[[True,False,True]]     #prints 1st and 3rd row with all columns
+
+data.iloc[lambda x:x.index%2==0]      #print all rows whose index label is even
+
+data.iloc[[0,2],[1,3]]
+
+data.iloc[:,[True,False,True,False]]   #prints all rows but 1st and 3rd column
+
+data.iloc[1:3,0:3]
+
+data.iloc[::-1,::-1]    #gives all rows nd colm but in reverse order
+
+data.iloc[::2,::2]   
+
+from sklearn import datasets
+import pandas as pd
+
+dataset=datasets.load_iris()
+dataset
+
+#convert iris data to dataframe
+df=pd.DataFrame(data=dataset.data,columns=dataset.feature_names)
+
+df
+
+correlation=df["sepal length (cm)"].corr(df["petal length (cm)"])
+
+print("the correlation coefficient between sepal length and petal length is ",correlation)
+
+correlation matrix for iris
+
+correlation=df.corr()
+correlation
+
+correlation.style.background_gradient(cmap='BrBG') #we had taken style brbg i.e. bright background where dark colour shows highly correlated values
+
+# heat map using seaborn
+
+pip install seaborn
+
+
+import seaborn as sn
+
+correlation=df.corr()
+
+hm= sn.heatmap(data = df)
+
+sn.heatmap(correlation)
+
+correlation= df.corr()
+heatmap=sn.heatmap(correlation,annot=True)
+
+heatmap.set(xlabel="Iris values on x axis",ylabel="Iris values on y axis",title="correlation matrix of Iris dataset")
+
+plt.show
+
+# PCA Using Python
+
+from sklearn.datasets import load_iris
+
+iris=load_iris()
+
+x= iris.data
+
+dataf=pd.DataFrame(x,columns=iris.feature_names)
+
+dataf
+
+#standerdization is done 1st on data then PCA is done
+from sklearn.preprocessing import StandardScaler
+
+scalar=StandardScaler()
+
+x_scaled= scalar.fit_transform(x)    
+x_scaled
+
+from sklearn.decomposition import PCA
+pca=PCA(n_components=2)
+principal_components= pca.fit_transform(x_scaled)
+
+principal_components
+
+import matplotlib.pyplot as plt
+plt.scatter(principal_components[:,0],principal_components[:,1])
+
+plt.xlabel('principal component_1')
+plt.ylabel('principal component_2')
+plt.show()
