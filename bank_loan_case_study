@@ -1,0 +1,269 @@
+# Importing necessary libraries
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Read the CSV files with the appropriate encoding
+application_data = pd.read_csv("application_data.csv")
+previous_application = pd.read_csv("previous_application.csv")
+columns_description = pd.read_csv("columns_description.csv", encoding='ISO-8859-1')
+
+
+application_data.head()
+
+previous_application.head()
+previous_application.columns
+
+columns_description.head()
+
+# TASK A:  Identify Missing Data and Deal with it Appropriately
+
+# Task A: Handle Missing Data
+# Identify missing values in application_data
+missing_values = application_data.isnull().sum()
+missing_values
+
+plt.figure(figsize=(20, 6))
+sns.barplot(x=missing_values.index, y=(missing_values / len(application_data)))
+plt.xticks(rotation=90)
+plt.title("Proportion of Missing Values in Application Data")
+plt.show()
+
+# Display data types of each column
+print(application_data.dtypes)
+
+
+# Identify numerical columns
+numerical_columns = application_data.select_dtypes(include=['float64', 'int64']).columns
+
+# Replace missing values with the mean for numerical columns
+application_data[numerical_columns] = application_data[numerical_columns].fillna(application_data[numerical_columns].mean())
+
+
+# Identify categorical columns
+categorical_columns = application_data.select_dtypes(include=['object']).columns
+
+# Replace missing values with the median for categorical columns
+application_data[categorical_columns] = application_data[categorical_columns].fillna(application_data[categorical_columns].mode().iloc[0])
+
+
+missing_values = application_data.isnull().sum()
+missing_values                                         #we can see all missing values are gone now
+
+# TASK B: Identify Outliers in the Dataset
+
+# Identify outliers in numerical columns of application_data
+numerical_columns = application_data.select_dtypes(include=['int64', 'float64']).columns
+numerical_columns
+
+# Visualize box plots for numerical columns
+plt.figure(figsize=(16, 8))
+for i, col in enumerate(numerical_columns, 1):
+    plt.subplot(1, 3, i)
+    sns.boxplot(x=application_data[col])
+    plt.title(col)
+plt.tight_layout()
+plt.show()
+
+# TASK C: Analyze Data Imbalance
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Assuming 'TARGET' is your target variable column
+target_counts = application_data['TARGET'].value_counts()
+
+# Pie Chart
+plt.figure(figsize=(4,4))
+plt.pie(target_counts, labels=target_counts.index, autopct='%1.1f%%', startangle=90, colors=['skyblue', 'lightcoral'])
+plt.title('Distribution of Target Variable (TARGET)')
+plt.show()
+
+# Bar Chart
+plt.figure(figsize=(6, 6))
+sns.countplot(x='TARGET', data=application_data, palette='pastel')
+plt.title('Distribution of Target Variable (TARGET)')
+plt.show()
+
+
+
+# Task D: Perform Univariate, Segmented Univariate, and Bivariate Analysis
+
+import matplotlib.pyplot as plt
+
+# Example for a numerical variable 'income'
+plt.figure(figsize=(8, 6))
+plt.hist(application_data['AMT_INCOME_TOTAL'], bins=20, color='skyblue', edgecolor='black')
+plt.title('Distribution of Income')
+plt.xlabel('AMT_INCOME_TOTAL')
+plt.ylabel('Frequency')
+plt.show()
+
+
+#Univariate Analysis:
+#Histograms for Numerical Variables:
+
+# Selecting numerical columns
+numerical_columns = application_data.select_dtypes(include=['int64', 'float64']).columns
+
+# Plotting histograms for all numerical columns
+plt.figure(figsize=(16, 12))
+for i, col in enumerate(numerical_columns, 1):
+    plt.subplot(1, 3, i)
+    plt.hist(application_data[col], bins=20, color='skyblue', edgecolor='black')
+    plt.title(f'Distribution of {col}')
+    plt.xlabel(col)
+    plt.ylabel('Frequency')
+
+plt.tight_layout()
+plt.show()
+
+
+#Bar Charts for Categorical Variables:
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Selecting categorical columns
+categorical_columns = application_data.select_dtypes(include=['object']).columns
+
+# Plotting count plots for all categorical columns
+plt.figure(figsize=(16, 6))
+for i, col in enumerate(categorical_columns, 1):
+    plt.subplot(1, 3, i)
+    sns.countplot(x=col, data=application_data, palette='viridis')
+    plt.title(f'Distribution of {col}')
+    plt.xlabel(col)
+    plt.ylabel('Count')
+
+plt.tight_layout()
+plt.show()
+
+
+
+# Selecting categorical columns
+categorical_columns = application_data.select_dtypes(include=['object']).columns
+
+# Plotting count plots for all categorical columns
+plt.figure(figsize=(10,6))
+for i, col in enumerate(categorical_columns, 1):
+    try:
+        plt.subplot(1, 3, i)
+        sns.countplot(x=col, data=application_data, palette='viridis')
+        plt.title(f'Distribution of {col}')
+        plt.xlabel(col)
+        plt.ylabel('Count')
+    except Exception as e:
+        print(f"Error plotting {col}: {e}")
+
+plt.tight_layout()
+plt.show()
+
+
+#Segmented Univariate Analysis:
+#Grouped Bar Charts for Categorical Variables Across Scenarios:
+plt.figure(figsize=(20, 20))
+sns.countplot(x='NAME_CONTRACT_TYPE', hue='TARGET', data=application_data, palette='pastel')
+plt.title('NAME_CONTRACT_TYPE Distribution by Target')
+plt.xlabel('NAME_CONTRACT_TYPE')
+plt.ylabel('Count')
+plt.show()
+
+
+#Bivariate Analysis:
+#Scatter Plots for Numerical-Target Variable Relationships:
+plt.figure(figsize=(6,6))
+sns.scatterplot(x='AMT_INCOME_TOTAL', y='TARGET', data=application_data, alpha=0.5)
+plt.title('Scatter Plot of Income and Target')
+plt.xlabel('AMT_INCOME_TOTAL')
+plt.ylabel('TARGET')
+plt.show()
+
+
+plt.figure(figsize=(10, 6))
+sns.boxplot(x='NAME_EDUCATION_TYPE', y='NAME_INCOME_TYPE', hue='TARGET', data=application_data, palette='Set3')
+plt.title('Income Distribution by Education and Target')
+plt.xlabel('Education Level')
+plt.ylabel('Income')
+plt.show()
+
+
+#shows correlation between data
+# Assuming numerical_columns contains the names of your numerical columns
+numerical_columns = application_data.select_dtypes(include='number').columns
+
+# Calculating the correlation matrix
+correlation_matrix = application_data[numerical_columns].corr()
+
+# Setting up the matplotlib figure
+plt.figure(figsize=(12, 10))
+
+# Creating a heatmap using seaborn
+sns.heatmap(correlation_matrix, annot=False, cmap='coolwarm', fmt=".2f", linewidths=.5)
+
+# Setting the title
+plt.title('Correlation Heatmap of Numerical Variables')
+
+# Showing the plot
+plt.show()
+
+
+# TASK E: Identify Top Correlations for Different Scenarios
+
+
+# Assuming 'TARGET' is the target variable in dataset
+# Loading dataset 
+import numpy as np
+
+application_data = pd.read_csv('application_data.csv')
+
+
+def analyze_correlations(data, segment_column, target_column):
+    # Separating data into segments based on the segment_column
+    segments = data.groupby(segment_column)
+
+    # Iterate through each segment
+    for segment, segment_data in segments:
+        # Selecting only numeric columns for correlation analysis
+        numeric_data = segment_data.select_dtypes(include=[np.number])
+
+        # Calculating correlation matrix
+        correlation_matrix = numeric_data.corr()
+
+        # Plotting heatmap
+        plt.figure(figsize=(8, 6))
+        sns.heatmap(correlation_matrix, annot=False, cmap='coolwarm', fmt=".2f")
+        plt.title(f'Correlation Matrix - {segment}')
+        plt.show()
+
+# Assuming 'TARGET' is the column indicating payment difficulties
+analyze_correlations(application_data, segment_column='TARGET', target_column='TARGET')
+
+
+
+
+application_data = pd.read_csv('application_data.csv')
+
+def analyze_correlations(data, target_column, top_n=5):
+    # Selecting only numeric columns for correlation analysis
+    numeric_data = data.select_dtypes(include=[np.number])
+
+    # Calculating correlation matrix
+    correlation_matrix = numeric_data.corr()
+
+    # Getting correlations with the target variable
+    target_correlations = correlation_matrix[target_column].drop(target_column)
+    
+    # Getting the top correlated features
+    top_correlations = target_correlations.abs().sort_values(ascending=False).head(top_n)
+    
+    # Plotting heatmap
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(correlation_matrix.loc[top_correlations.index, top_correlations.index], annot=True, cmap='coolwarm', fmt=".2f")
+    plt.title(f'Top Correlated Features with {target_column}')
+    plt.show()
+
+# Assuming 'TARGET' is the column indicating payment difficulties
+analyze_correlations(application_data, target_column='TARGET', top_n=5)
+
+
