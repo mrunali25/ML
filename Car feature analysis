@@ -1,0 +1,685 @@
+# Importing libraries
+
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import LinearRegression,Lasso,Ridge
+from sklearn.model_selection import train_test_split,GridSearchCV,RandomizedSearchCV
+from sklearn.metrics import mean_absolute_error,mean_squared_error,r2_score
+from sklearn.preprocessing import MinMaxScaler
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+import gc
+
+
+import warnings
+warnings.filterwarnings('ignore')
+
+# Reading dataset
+
+df = pd.read_excel("car_features.xlsx")
+df
+
+df.head()
+
+column_names = df.columns
+list(column_names)
+
+# Missing values handling
+
+df.info()
+
+df.isnull().sum()
+
+for i in column_names:
+    if df[i].dtypes == 'object':
+        df[i].fillna(df[i].mode()[0],inplace=True)
+    else:
+        df[i].fillna(df[i].mean(),inplace=True)
+
+df.isnull().sum()
+
+df.info()
+
+# Outliers handling
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Assuming df is your DataFrame with the provided columns
+columns_to_plot = ['Engine HP', 'Engine Cylinders', 'highway MPG', 'city mpg', 'Popularity', 'MSRP']
+
+# Create a figure with subplots
+fig, axes = plt.subplots(nrows=len(columns_to_plot), figsize=(10, 6 * len(columns_to_plot)))
+
+# Loop through each column and create a box plot
+for i, column in enumerate(columns_to_plot):
+    sns.boxplot(x=df[column], ax=axes[i], color='skyblue')
+    axes[i].set_title(f'Box Plot - {column}')
+
+# Adjust layout
+plt.tight_layout()
+plt.show()
+
+
+from scipy import stats
+
+# Example for Z-Score method
+numerical_columns = ['Engine HP', 'Engine Cylinders', 'highway MPG', 'city mpg', 'Popularity', 'MSRP']
+
+for column in numerical_columns:
+    z_scores = stats.zscore(df[column])
+    df[column] = np.where(np.abs(z_scores) > 3, df[column].median(), df[column])
+
+# Or using IQR method
+for column in numerical_columns:
+    Q1 = df[column].quantile(0.25)
+    Q3 = df[column].quantile(0.75)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    df[column] = np.where((df[column] < lower_bound) | (df[column] > upper_bound), df[column].median(), df[column])
+
+
+from scipy import stats
+
+numerical_columns = ['Engine HP', 'Engine Cylinders', 'highway MPG', 'city mpg', 'Popularity', 'MSRP']
+
+outliers = pd.DataFrame()
+
+for column in numerical_columns:
+    z_scores = stats.zscore(df[column])
+    outliers[column] = np.abs(z_scores) > 3
+
+unique_outliers = df[outliers.any(axis=1)]
+unique_outliers
+
+from scipy import stats
+
+numerical_columns = ['Engine HP', 'Engine Cylinders', 'highway MPG', 'city mpg', 'Popularity', 'MSRP']
+
+for column in numerical_columns:
+    z_scores = np.abs(stats.zscore(df[column]))
+    df = df[(z_scores <= 3)]  # Keep only rows where Z-Score is within 3 standard deviations
+
+# df now contains rows without numerical outliers
+
+
+numerical_columns = ['Engine HP', 'Engine Cylinders', 'highway MPG', 'city mpg', 'Popularity', 'MSRP']
+
+outliers = pd.DataFrame()
+
+for column in numerical_columns:
+    Q1 = df[column].quantile(0.25)
+    Q3 = df[column].quantile(0.75)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    outliers[column] = (df[column] < lower_bound) | (df[column] > upper_bound)
+
+unique_outliers = df[outliers.any(axis=1)]
+unique_outliers
+
+numerical_columns = ['Engine HP', 'Engine Cylinders', 'highway MPG', 'city mpg', 'Popularity', 'MSRP']
+
+for column in numerical_columns:
+    Q1 = df[column].quantile(0.25)
+    Q3 = df[column].quantile(0.75)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    df = df[(df[column] >= lower_bound) & (df[column] <= upper_bound)]
+
+# df now contains rows without numerical outliers
+
+
+df
+
+df = df.reset_index(drop=True)
+df
+
+# Exploratory Data Analysis
+
+plt.figure(figsize=(12, 6))
+sns.histplot(df['MSRP'], bins=30, kde=True)
+plt.title('Distribution of Car Prices (MSRP)')
+plt.xlabel('MSRP')
+plt.ylabel('Frequency')
+plt.show()
+
+
+df.describe()
+
+# Distribution of numerical features
+numerical_columns = ['Engine HP', 'Engine Cylinders', 'highway MPG', 'city mpg', 'Popularity', 'MSRP']
+
+plt.figure(figsize=(16, 10))
+for i, column in enumerate(numerical_columns, 1):
+    plt.subplot(3, 2, i)
+    sns.histplot(df[column], bins=20, kde=True)
+    plt.title(f'Distribution of {column}')
+
+plt.tight_layout()
+plt.show()
+
+
+# Plot bar charts for categorical columns
+categorical_columns = ['Make', 'Vehicle Size', 'Vehicle Style', 'Transmission Type','Driven_Wheels', 'Number of Doors', 'Market Category']
+
+plt.figure(figsize=(18, 8))
+for col in categorical_columns:
+    sns.countplot(x=col, data=df, order=df[col].value_counts().index)
+    plt.xticks(rotation=45)
+    plt.title(f'Distribution of {col}')
+    plt.show()
+
+
+# Calculate correlation matrix
+correlation_matrix = df.corr()
+correlation_matrix
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+
+# Pairwise correlation heatmap
+plt.figure(figsize=(14, 8))
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f")
+plt.title('Pairwise Correlation Heatmap')
+plt.show()
+
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Assuming df is your DataFrame with the provided columns
+numeric_columns = ['Engine HP', 'Engine Cylinders', 'highway MPG', 'city mpg', 'Popularity', 'MSRP']
+
+# Calculate the correlation matrix
+correlation_matrix = df[numeric_columns].corr()
+
+# Identify the top correlated pairs
+threshold = 0.7  # You can adjust this threshold based on your requirements
+correlated_pairs = []
+
+for i in range(len(correlation_matrix.columns)):
+    for j in range(i + 1, len(correlation_matrix.columns)):
+        if abs(correlation_matrix.iloc[i, j]) > threshold:
+            correlated_pairs.append((correlation_matrix.columns[i], correlation_matrix.columns[j]))
+
+# Display the top correlated pairs
+print("Top Correlated Pairs:")
+for pair in correlated_pairs:
+    print(pair)
+
+
+
+import numpy as np
+import pandas as pd
+
+# Assuming df is your DataFrame with the provided columns
+# If not done already, calculate the correlation matrix
+correlation_matrix = df.corr()
+
+# Extract the upper triangle of the correlation matrix
+upper_triangle = correlation_matrix.where(np.triu(np.ones(correlation_matrix.shape), k=1).astype(np.bool_))
+
+# Find the best correlated pairs
+best_correlated_pairs = upper_triangle.unstack().sort_values(ascending=False).dropna()
+
+# Print the top N correlated pairs and their correlation values
+N = 5  # You can adjust N based on your preference
+print("Top", N, "correlated pairs:")
+print(best_correlated_pairs.head(N))
+
+
+
+# Regression analysis
+
+import statsmodels.api as sm
+import pandas as pd
+
+# Select the columns for regression analysis
+columns_for_regression = ['city mpg', 'highway MPG', 'Year', 'Engine Cylinders', 'Engine HP', 'MSRP']
+
+# Create a new DataFrame with selected columns
+regression_data = df[columns_for_regression]
+
+# Drop rows with missing values
+regression_data = regression_data.dropna()
+
+# Define the independent variables (X) and the dependent variable (y)
+X = regression_data[['city mpg', 'highway MPG', 'Year', 'Engine Cylinders', 'Engine HP']]
+y = regression_data['MSRP']
+
+# Add a constant term to the independent variables
+X = sm.add_constant(X)
+
+# Fit the regression model
+model = sm.OLS(y, X).fit()
+
+# Print the regression results
+print(model.summary())
+
+
+
+# Market Segementation 
+
+import statsmodels.api as sm
+from statsmodels.formula.api import ols
+
+# Define the list of categorical variables
+categorical_variables = ['Make', 'Model', 'Engine Fuel Type', 'Transmission Type',
+                          'Driven_Wheels', 'Number of Doors', 'Market Category',
+                          'Vehicle Size', 'Vehicle Style']
+
+# Convert each categorical variable to category type and perform ANOVA
+for variable in categorical_variables:
+    df[variable] = df[variable].astype('category')
+    
+    # Modify the formula to handle spaces in variable names
+    formula = f'MSRP ~ C(Q("{variable}"))'
+    
+    model = ols(formula, data=df).fit()
+    anova_table = sm.stats.anova_lm(model, typ=2)
+    
+    # Display the ANOVA table for each variable
+    print(f"ANOVA for {variable}:")
+    print(anova_table)
+    print("\n" + "="*50 + "\n")
+
+
+
+
+import pandas as pd
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+
+# Assuming df is your DataFrame with car data
+
+# Select relevant features for clustering
+features_for_clustering = df[['Engine HP', 'Engine Cylinders', 'highway MPG', 'city mpg', 'Popularity']]
+
+# Standardize the features
+scaler = StandardScaler()
+scaled_features = scaler.fit_transform(features_for_clustering)
+
+# Determine the optimal number of clusters using the elbow method
+inertia = []
+for k in range(1, 11):
+    kmeans = KMeans(n_clusters=k, random_state=42)
+    kmeans.fit(scaled_features)
+    inertia.append(kmeans.inertia_)
+
+# Plot the elbow method
+plt.plot(range(1, 11), inertia, marker='o')
+plt.title('Elbow Method for Optimal k')
+plt.xlabel('Number of Clusters')
+plt.ylabel('Inertia')
+plt.show()
+
+# Based on the elbow method, choose the optimal k (number of clusters)
+
+# Let's say the optimal k is 3
+optimal_k = 3
+
+# Apply K-means clustering with the optimal k
+kmeans = KMeans(n_clusters=optimal_k, random_state=42)
+df['Cluster'] = kmeans.fit_predict(scaled_features)
+
+# Analyze the characteristics of each cluster
+cluster_analysis = df.groupby('Cluster')[['Engine HP', 'Engine Cylinders', 'highway MPG', 'city mpg', 'Popularity']].mean()
+print(cluster_analysis)
+
+
+import seaborn as sns
+
+# Pairwise scatter plot for two features with cluster colors
+def plot_clusters(feature1, feature2, df):
+    plt.figure(figsize=(10, 6))
+    sns.scatterplot(x=feature1, y=feature2, hue='Cluster', data=df, palette='viridis', s=50)
+    plt.title(f'K-means Clustering ({feature1} vs. {feature2})')
+    plt.xlabel(feature1)
+    plt.ylabel(feature2)
+    plt.legend(title='Cluster')
+    plt.show()
+
+# Choose two features for visualization
+feature1 = 'Engine HP'
+feature2 = 'highway MPG'
+
+# Plot clusters for the selected features
+plot_clusters(feature1, feature2, df)
+
+
+features_for_clustering = df[['Engine HP', 'Engine Cylinders', 'highway MPG', 'city mpg', 'Popularity']]
+scaler = StandardScaler()
+scaled_features = scaler.fit_transform(features_for_clustering)
+inertia = []
+for k in range(1, 11):
+    kmeans = KMeans(n_clusters=k, random_state=42)
+    kmeans.fit(scaled_features)
+    inertia.append(kmeans.inertia_)
+plt.plot(range(1, 11), inertia, marker='o')
+plt.title('Elbow Method for Optimal k')
+plt.xlabel('Number of Clusters')
+plt.ylabel('Inertia')
+plt.show()
+optimal_k = 3  # Replace with the chosen optimal k
+kmeans = KMeans(n_clusters=optimal_k, random_state=42)
+df['Numerical_Cluster'] = kmeans.fit_predict(scaled_features)
+
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Set the style for the plots
+sns.set(style="whitegrid")
+
+# Bar chart for MSRP distribution across Numerical Clusters
+plt.figure(figsize=(12, 6))
+sns.barplot(x='Numerical_Cluster', y='MSRP', data=df)
+plt.title('MSRP Distribution Across Numerical Clusters')
+plt.xlabel('Numerical Cluster')
+plt.ylabel('MSRP')
+plt.show()
+
+# Boxplot for MSRP distribution across Categorical Variables
+for variable in categorical_variables:
+    plt.figure(figsize=(14, 6))
+    sns.boxplot(x=variable, y='MSRP', data=df)
+    plt.title(f'MSRP Distribution Across {variable}')
+    plt.xlabel(variable)
+    plt.ylabel('MSRP')
+    plt.xticks(rotation=45, ha='right')
+    plt.show()
+
+
+Based on the visualizations and analyses performed, here are some insights into patterns or trends in MSRP based on different segments:
+
+Numerical Clusters:
+
+Numerical Cluster 0 tends to have higher MSRP compared to Clusters 1 and 2.
+Characteristics of Cluster 0: Higher Engine HP, more Engine Cylinders, lower highway and city MPG, and higher Popularity.
+Categorical Variables:
+
+Make:
+MSRP varies significantly across different car makes.
+Some makes tend to have higher average MSRP than others.
+Model:
+MSRP varies across different car models.
+Some models have higher average MSRP compared to others.
+Engine Fuel Type:
+Different engine fuel types exhibit variations in MSRP.
+For some fuel types, MSRP tends to be higher on average.
+Transmission Type:
+MSRP differs based on the type of transmission.
+Certain transmission types are associated with higher average MSRP.
+Driven Wheels:
+Driven wheels influence MSRP, with certain types associated with higher average prices.
+Number of Doors:
+MSRP varies based on the number of doors, with specific counts associated with higher prices.
+Market Category:
+Different market categories show variations in MSRP.
+Some market categories have higher average MSRP.
+Vehicle Size:
+Vehicle size impacts MSRP, with larger sizes often associated with higher prices.
+Vehicle Style:
+Vehicle styles exhibit variations in MSRP.
+Certain styles tend to have higher average MSRP.
+Overall Trends:
+
+Luxury car makes and models often have higher MSRP.
+Performance-related features (higher Engine HP, more Cylinders) are associated with higher MSRP.
+Larger and more luxurious vehicle styles tend to have higher MSRP.
+These observations provide a general overview, and further analysis or specific inquiries into particular segments can reveal more detailed insights.
+
+
+
+
+
+
+
+# Feature Importance Analysis:
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeRegressor
+import matplotlib.pyplot as plt
+
+# Assuming df is your DataFrame with car data
+
+# Select features and target variable
+features = ['Year', 'Engine HP', 'Engine Cylinders', 'highway MPG', 'city mpg', 'Popularity']
+target = 'MSRP'
+
+# Handle categorical variables (if any)
+# You may need to encode categorical variables using techniques like one-hot encoding
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(df[features], df[target], test_size=0.2, random_state=42)
+
+# Create a decision tree regressor
+model = DecisionTreeRegressor(random_state=42)
+
+# Fit the model to the training data
+model.fit(X_train, y_train)
+
+# Get feature importances from the trained model
+feature_importances = model.feature_importances_
+
+# Create a DataFrame to display feature importances
+importance_df = pd.DataFrame({'Feature': features, 'Importance': feature_importances})
+importance_df = importance_df.sort_values(by='Importance', ascending=False)
+
+# Plot feature importances
+plt.figure(figsize=(10, 6))
+plt.barh(importance_df['Feature'], importance_df['Importance'])
+plt.xlabel('Importance')
+plt.title('Feature Importances for Car Price Prediction')
+plt.show()
+
+# Evaluate the model on the test set (optional)
+test_predictions = model.predict(X_test)
+# You can assess model performance metrics or use the model for further analysis
+
+# Use the model for prediction (optional)
+# You can use the trained model to predict car prices for new data
+
+
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder
+
+# Assuming df is your DataFrame with car data
+
+# Convert all values in the "Number of Doors" column to strings
+df['Model'] = df['Model'].astype(str)
+
+df['Number of Doors'] = df['Number of Doors'].astype(str)
+
+# Select numerical features
+numerical_features = ['Year', 'Engine HP', 'Engine Cylinders', 'highway MPG', 'city mpg', 'Popularity']
+
+# Select categorical features
+categorical_features = ['Make', 'Model', 'Engine Fuel Type', 'Transmission Type',
+                          'Driven_Wheels', 'Number of Doors', 'Market Category',
+                          'Vehicle Size', 'Vehicle Style']
+
+# Select target variable
+target = 'MSRP'
+
+# Create a column transformer to apply different preprocessing to numerical and categorical features
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', 'passthrough', numerical_features),
+        ('cat', OneHotEncoder(drop='first'), categorical_features)
+    ])
+
+# Apply the column transformer to the data
+X = preprocessor.fit_transform(df.drop(target, axis=1))
+y = df[target]
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Create a decision tree regressor
+model = DecisionTreeRegressor(random_state=42)
+
+# Fit the model to the training data
+model.fit(X_train, y_train)
+
+# Get feature importances from the trained model
+feature_importances = model.feature_importances_
+
+# Create a DataFrame to display feature importances
+importance_df = pd.DataFrame({'Feature': preprocessor.get_feature_names_out(), 'Importance': feature_importances})
+importance_df = importance_df.sort_values(by='Importance', ascending=False)
+
+# Display only the top N most important features
+top_n = 15  # Adjust this value based on your preference
+
+# Plot feature importances
+plt.figure(figsize=(15, 8))
+plt.barh(importance_df['Feature'][:top_n], importance_df['Importance'][:top_n])
+plt.xlabel('Importance')
+plt.title(f'Top {top_n} Feature Importances for Car Price Prediction (Including Categorical Variables)')
+plt.show()
+
+
+# Consumer Demand Analysis:
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Distribution of Vehicle Size
+plt.figure(figsize=(10, 6))
+sns.countplot(x='Vehicle Size', data=df)
+plt.title('Distribution of Vehicle Size')
+plt.show()
+
+# Distribution of Vehicle Style
+plt.figure(figsize=(12, 6))
+sns.countplot(x='Vehicle Style', data=df)
+plt.title('Distribution of Vehicle Style')
+plt.xticks(rotation=90, ha='right')
+plt.show()
+
+# Distribution of Engine Fuel Type
+plt.figure(figsize=(10, 6))
+sns.countplot(x='Engine Fuel Type', data=df)
+plt.title('Distribution of Engine Fuel Type')
+plt.xticks(rotation=45, ha='right')
+plt.show()
+
+# Distribution of Make
+plt.figure(figsize=(20, 6))
+sns.countplot(x='Make', data=df)
+plt.title('Distribution of Make')
+plt.xticks(rotation=90, ha='right')
+plt.show()
+
+# Distribution of Transmission Type
+plt.figure(figsize=(10, 6))
+sns.countplot(x='Transmission Type', data=df)
+plt.title('Distribution of Transmission Type')
+plt.xticks(rotation=45, ha='right')
+plt.show()
+
+# Distribution of Driven_Wheels
+plt.figure(figsize=(10, 6))
+sns.countplot(x='Driven_Wheels', data=df)
+plt.title('Distribution of Driven_Wheels')
+plt.xticks(rotation=45, ha='right')
+plt.show()
+
+# Distribution of Engine Cylinders
+plt.figure(figsize=(10, 6))
+sns.countplot(x='Engine Cylinders', data=df)
+plt.title('Distribution of Engine Cylinders')
+plt.xticks(rotation=45, ha='right')
+plt.show()
+
+# Distribution of Number of Doors
+plt.figure(figsize=(10, 6))
+sns.countplot(x='Number of Doors', data=df)
+plt.title('Distribution of Number of Doors')
+plt.xticks(rotation=45, ha='right')
+plt.show()
+
+
+
+
+# Box plot for MSRP across Vehicle Styles
+plt.figure(figsize=(14, 8))
+sns.boxplot(x='Vehicle Style', y='MSRP', data=df)
+plt.title('MSRP Distribution Across Vehicle Styles')
+plt.xticks(rotation=45, ha='right')
+plt.xlabel('Vehicle Style')
+plt.ylabel('MSRP')
+plt.show()
+
+
+# Box plot for MSRP across Vehicle Styles
+plt.figure(figsize=(14, 8))
+sns.boxplot(x='Make', y='MSRP', data=df)
+plt.title('MSRP Distribution Make')
+plt.xticks(rotation=45, ha='right')
+plt.xlabel('Vehicle Style')
+plt.ylabel('MSRP')
+plt.show()
+
+
+# Sensitivity Analysis
+
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+
+# Assuming df is your DataFrame with car data
+# If needed, preprocess the data and handle missing values
+
+# Select relevant features for sensitivity analysis, including 'MSRP'
+sensitivity_features = ['city mpg', 'highway MPG', 'Year', 'Engine Cylinders', 'Engine HP', 'MSRP']
+
+# Create a subset DataFrame with selected features
+sensitivity_df = df[sensitivity_features]
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(sensitivity_df.drop('MSRP', axis=1), sensitivity_df['MSRP'], test_size=0.2, random_state=42)
+
+# Fit a simple linear regression model
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# Make predictions on the test set
+y_pred = model.predict(X_test)
+
+# Assess model performance
+mse = mean_squared_error(y_test, y_pred)
+print(f'Mean Squared Error: {mse}')
+
+# Visualize feature importances
+coefficients = pd.DataFrame({'Feature': X_train.columns, 'Coefficient': model.coef_})
+coefficients = coefficients.sort_values(by='Coefficient', ascending=False)
+
+plt.figure(figsize=(12, 6))
+sns.barplot(x='Coefficient', y='Feature', data=coefficients)
+
+# Add values on top of each bar
+for index, value in enumerate(coefficients['Coefficient']):
+    plt.text(value, index, f'{value:.2f}', ha='left', va='center', fontsize=10)
+
+plt.title('Sensitivity Analysis: Feature Importances')
+plt.xlabel('Coefficient')
+plt.ylabel('Feature')
+plt.show()
+
+
+
