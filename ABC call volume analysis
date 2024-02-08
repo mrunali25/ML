@@ -1,0 +1,217 @@
+# Importing Libraries
+
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import LinearRegression,Lasso,Ridge
+from sklearn.model_selection import train_test_split,GridSearchCV,RandomizedSearchCV
+from sklearn.metrics import mean_absolute_error,mean_squared_error,r2_score
+from sklearn.preprocessing import MinMaxScaler
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+import gc
+
+df = pd.read_excel("Call_Volume_Trend_Analysis_Project_9.xlsx")
+df
+
+df.head(8)
+
+import pandas as pd
+import numpy as np
+from sklearn.impute import SimpleImputer
+# Separate numerical and categorical columns
+numeric_columns = df.select_dtypes(include=[np.number]).columns
+categorical_columns = df.select_dtypes(exclude=[np.number]).columns
+
+# Impute NaN values in numerical columns with mean
+numeric_imputer = SimpleImputer(strategy='mean')
+df[numeric_columns] = numeric_imputer.fit_transform(df[numeric_columns])
+
+# Impute NaN values in categorical columns with mode
+for col in categorical_columns:
+    mode_value = df[col].mode().iloc[0]
+    df[col].fillna(mode_value, inplace=True)
+
+print(df)
+
+# Missing values handling
+
+df.info()
+
+df.isnull().sum()
+
+df.columns
+
+# Average Call Duration:
+
+
+# Convert 'Date_&_Time' to datetime format and create 'Hourly_Bucket'
+df['Date_&_Time'] = pd.to_datetime(df['Date_&_Time'])
+df['Hourly_Bucket'] = df['Date_&_Time'].dt.hour
+df['Hourly_Bucket'] = df['Hourly_Bucket'].astype(str) + '-' + (df['Hourly_Bucket'] + 1).astype(str)
+
+# Convert 'Duration(hh:mm:ss)' to string and then to timedelta
+df['Call_Seconds'] = pd.to_timedelta(df['Duration(hh:mm:ss)'].astype(str)).dt.total_seconds()
+
+# Group data by 'Hourly_Bucket' and calculate average call duration
+average_duration_hourly = df.groupby('Hourly_Bucket')['Call_Seconds'].mean().reset_index()
+
+# Define the order of time buckets to ensure '9-10' appears first
+time_bucket_order = ['9-10', '10-11', '11-12', '12-13', '13-14', '14-15', '15-16', '16-17', '17-18', '18-19', '19-20', '20-21', '21-22']
+
+# Sort the average_duration_hourly DataFrame based on the custom order
+average_duration_hourly['Hourly_Bucket'] = pd.Categorical(average_duration_hourly['Hourly_Bucket'], categories=time_bucket_order, ordered=True)
+average_duration_hourly = average_duration_hourly.sort_values('Hourly_Bucket')
+
+# Print average call durations in numeric form
+print("Average Call Durations (in seconds):")
+for index, row in average_duration_hourly.iterrows():
+    print(f"{row['Hourly_Bucket']}: {row['Call_Seconds']} seconds")
+
+
+
+
+# Convert 'Date_&_Time' to datetime format
+df['Date_&_Time'] = pd.to_datetime(df['Date_&_Time'])
+
+# Create a new column 'Hourly_Bucket' to represent the time buckets
+df['Hourly_Bucket'] = df['Date_&_Time'].dt.hour
+
+# If you want to represent time buckets as 1-2, 2-3, etc.
+# Adjust the Hourly_Bucket values accordingly
+df['Hourly_Bucket'] = df['Hourly_Bucket'].astype(str) + '-' + (df['Hourly_Bucket'] + 1).astype(str)
+
+# Now, 'Hourly_Bucket' contains the time buckets you've created
+print("Hourly Buckets:")
+print(df['Hourly_Bucket'].unique())
+
+# Convert 'Date_&_Time' to datetime format and create 'Hourly_Bucket'
+df['Date_&_Time'] = pd.to_datetime(df['Date_&_Time'])
+df['Hourly_Bucket'] = df['Date_&_Time'].dt.hour
+df['Hourly_Bucket'] = df['Hourly_Bucket'].astype(str) + '-' + (df['Hourly_Bucket'] + 1).astype(str)
+
+# Convert 'Duration(hh:mm:ss)' to string and then to timedelta
+df['Call_Seconds'] = pd.to_timedelta(df['Duration(hh:mm:ss)'].astype(str)).dt.total_seconds()
+
+# Group data by 'Hourly_Bucket' and calculate average call duration
+average_duration_hourly = df.groupby('Hourly_Bucket')['Call_Seconds'].mean().reset_index()
+
+time_bucket_order = ['9-10', '10-11', '11-12', '12-13', '13-14', '14-15', '15-16', '16-17', '17-18', '18-19', '19-20', '20-21', '21-22']
+
+# Visualize the results using a bar plot for the new 'Hourly_Bucket'
+plt.figure(figsize=(10, 6))
+sns.barplot(x='Hourly_Bucket', y='Call_Seconds', data=average_duration_hourly, order=time_bucket_order)
+plt.title('Average Call Duration by New Hourly Bucket')
+plt.xlabel('Hourly Bucket')
+plt.ylabel('Average Call Duration (seconds)')
+plt.xticks(rotation=45, ha='right')  # Rotate x-axis labels for better visibility
+plt.show()
+
+# Call Volume Analysis
+
+# Convert 'Date_&_Time' to datetime format and create 'Hourly_Bucket'
+df['Date_&_Time'] = pd.to_datetime(df['Date_&_Time'])
+df['Hourly_Bucket'] = df['Date_&_Time'].dt.hour
+df['Hourly_Bucket'] = df['Hourly_Bucket'].astype(str) + '-' + (df['Hourly_Bucket'] + 1).astype(str)
+
+# Group data by 'Hourly_Bucket' and count the total number of calls in each time bucket
+hourly_call_volume = df.groupby('Hourly_Bucket')['Call_Status'].count().reset_index()
+
+# Define the order of time buckets to ensure '9-10' appears first
+time_bucket_order = ['9-10', '10-11', '11-12', '12-13', '13-14', '14-15', '15-16', '16-17', '17-18', '18-19', '19-20', '20-21', '21-22']
+
+# Sort the hourly_call_volume DataFrame based on the custom order
+hourly_call_volume['Hourly_Bucket'] = pd.Categorical(hourly_call_volume['Hourly_Bucket'], categories=time_bucket_order, ordered=True)
+hourly_call_volume = hourly_call_volume.sort_values('Hourly_Bucket')
+
+# Print the numeric values for hourly call volume
+print("Hourly Call Volume (Numeric):")
+for index, row in hourly_call_volume.iterrows():
+    print(f"{row['Hourly_Bucket']}: {row['Call_Status']} calls")
+
+# Visualize the results using a bar plot with the specified order
+plt.figure(figsize=(12, 6))
+sns.barplot(x='Hourly_Bucket', y='Call_Status', data=hourly_call_volume, order=time_bucket_order)
+plt.title('Hourly Call Volume Analysis')
+plt.xlabel('Hourly Bucket')
+plt.ylabel('Number of Calls')
+plt.xticks(rotation=45, ha='right')  # Rotate x-axis labels for better visibility
+plt.show()
+
+
+# Manpower Planning
+
+# Assuming df is your DataFrame with relevant columns
+# Convert 'Date_&_Time' to datetime format and create 'Time_Bucket'
+df['Date_&_Time'] = pd.to_datetime(df['Date_&_Time'])
+df['Time_Bucket'] = df['Date_&_Time'].dt.hour
+
+# Calculate the total calls and abandoned calls per time bucket
+total_calls_per_bucket = df.groupby('Time_Bucket').size()
+abandoned_calls_per_bucket = df[df['Call_Status'] == 'abandon'].groupby('Time_Bucket').size()
+
+# Calculate the target answer rate (complement of the target abandon rate)
+target_answer_rate = 1 - 0.10  # 90%
+
+# Calculate the minimum number of agents needed to achieve the target answer rate
+required_agents_per_bucket = (total_calls_per_bucket / target_answer_rate).round().astype(int)
+
+# Display the results in the desired format
+result_df = pd.DataFrame({
+    'Time_Bucket': required_agents_per_bucket.index.map(lambda x: f'{x}-{x+1}'),
+    'Required_Agents': required_agents_per_bucket.values
+})
+print(result_df)
+
+
+
+# Plotting a bar graph for required agents per time bucket
+plt.figure(figsize=(10, 6))
+plt.bar(result_df['Time_Bucket'], result_df['Required_Agents'], color='skyblue')
+plt.title('Required Agents per Time Bucket')
+plt.xlabel('Time Bucket')
+plt.ylabel('Required Agents')
+plt.xticks(rotation=45, ha='right')  # Rotate x-axis labels for better visibility
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.show()
+
+
+
+# Night Shift Manpower Planning:
+
+
+# Assume night shift calls distribution (adjust percentages accordingly)
+night_shift_calls_percentage = 0.30
+night_shift_calls_per_bucket = (total_calls_per_bucket * night_shift_calls_percentage).round().astype(int)
+
+# Calculate the additional agents needed for night shift calls
+additional_agents_night_shift = (night_shift_calls_per_bucket / target_answer_rate).round().astype(int)
+
+# Define different number of agents for day and night shifts
+night_shift_agents_multiplier = 1.2  # Adjust this multiplier as needed
+
+total_agents_required_night_shift = (additional_agents_night_shift * night_shift_agents_multiplier).round().astype(int)
+
+result_df_night_shift = pd.DataFrame({
+    'Time_Bucket': total_agents_required_night_shift.index.map(lambda x: f'{x}-{x+1}'),
+    'Required_Agents': total_agents_required_night_shift.values,
+    'Shift': 'Night'
+})
+
+print(result_df_night_shift)
+
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Display the results in a bar plot
+plt.figure(figsize=(10, 6))
+sns.barplot(x='Time_Bucket', y='Required_Agents', hue='Shift', data=result_df_night_shift)
+plt.title('Required Agents During Night Shift')
+plt.xlabel('Time Bucket')
+plt.ylabel('Required Agents')
+plt.xticks(rotation=45, ha='right')  # Rotate x-axis labels for better visibility
+plt.legend(title='Shift')
+plt.show()
+
+
